@@ -1,0 +1,2409 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>Nexora · Servidores Minecraft</title>
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <!-- Chart.js para estatísticas -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <style>
+    /* ===== RESET E VARIÁVEIS ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+    }
+    :root {
+      --color-primary: #5b7a8a;
+      --color-primary-light: #e8f0f3;
+      --color-primary-dark: #3d5561;
+      --color-text: #2c3e44;
+      --color-text-light: #5f7a84;
+      --color-bg: #fafcfd;
+      --color-bg-alt: #f0f5f7;
+      --color-white: #ffffff;
+      --color-border: #dce6ea;
+      --color-danger: #e74c3c;
+      --color-success: #2ecc71;
+      --color-warning: #f39c12;
+      --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-heading: "Georgia", "Times New Roman", serif;
+      --space-xs: 0.5rem;
+      --space-sm: 1rem;
+      --space-md: 2rem;
+      --space-lg: 4rem;
+      --border-radius: 8px;
+      --max-width: 1100px;
+      --header-height: 60px;
+      --fab-size: 56px;
+      --btn-radius: 60px;
+      --btn-content-bg: rgba(255, 255, 255, 0.15);
+      --btn-filters: blur(4px) brightness(150%);
+    }
+    [data-theme="dark"] {
+      --color-primary: #809b9e;
+      --color-primary-light: #2a3a3f;
+      --color-primary-dark: #4f6f7a;
+      --color-text: #e0e0e0;
+      --color-text-light: #b0b0b0;
+      --color-bg: #1a1e24;
+      --color-bg-alt: #252b33;
+      --color-white: #2c313a;
+      --color-border: #3a404b;
+    }
+    body {
+      font-family: var(--font-main);
+      font-size: 1rem;
+      line-height: 1.7;
+      color: var(--color-text);
+      background-color: var(--color-bg);
+      min-height: 100vh;
+      -webkit-tap-highlight-color: transparent;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    img { max-width: 100%; height: auto; display: block; }
+    a {
+      color: var(--color-primary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    a:hover { color: var(--color-primary-dark); }
+    h1, h2, h3 {
+      font-family: var(--font-heading);
+      font-weight: 400;
+      line-height: 1.3;
+      color: var(--color-text);
+    }
+    h2 { font-size: clamp(1.75rem, 3vw, 2.25rem); margin-bottom: var(--space-md); }
+    h3 { font-size: 1.25rem; margin-bottom: var(--space-sm); }
+
+    /* ===== HEADER ===== */
+    .header {
+      position: sticky;
+      top: 0;
+      left: 0;
+      right: 0;
+      background-color: var(--color-white);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      border-bottom: 1px solid var(--color-border);
+      height: var(--header-height);
+    }
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 100%;
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0 var(--space-md);
+    }
+    .logo {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      color: var(--color-text);
+    }
+    .nav-toggle {
+      display: block;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: var(--space-xs);
+    }
+    .nav-toggle span {
+      display: block;
+      width: 24px;
+      height: 2px;
+      background-color: var(--color-text);
+      margin: 5px 0;
+      transition: 0.2s;
+    }
+
+    /* ===== BOTÃO VOLTAR ===== */
+    .back-button {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: none;
+      border: none;
+      color: var(--color-primary);
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 8px 0;
+      margin-bottom: 16px;
+    }
+    .back-button .material-icons { font-size: 20px; }
+
+    /* ===== FAB ===== */
+    .fab {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: var(--fab-size);
+      height: var(--fab-size);
+      border-radius: 50%;
+      background: linear-gradient(145deg, var(--color-primary), var(--color-primary-dark));
+      border: none;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      z-index: 100;
+      color: white;
+    }
+    .fab .material-icons { font-size: 28px; transition: transform 0.3s; }
+    .fab.active .material-icons { transform: rotate(45deg); }
+    .fab.hide { opacity: 0; pointer-events: none; transform: scale(0.8); }
+    .fab.hidden { display: none; }
+
+    .fab-menu {
+      position: fixed;
+      bottom: 100px;
+      right: 24px;
+      background: var(--btn-content-bg);
+      backdrop-filter: var(--btn-filters);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 24px;
+      padding: 8px 0;
+      min-width: 200px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      transform: scale(0);
+      opacity: 0;
+      transform-origin: bottom right;
+      transition: transform 0.25s, opacity 0.2s;
+      z-index: 99;
+    }
+    .fab-menu.active { transform: scale(1); opacity: 1; }
+    .fab-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 20px;
+      color: white;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .fab-menu-item:hover { background: rgba(255,255,255,0.2); }
+    .fab-menu-item .material-icons { color: white; font-size: 22px; }
+
+    .overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: transparent; z-index: 98; display: none;
+    }
+    .overlay.active { display: block; }
+
+    /* ===== TELAS ===== */
+    .screen { display: none; max-width: var(--max-width); margin: 0 auto; padding: 20px 16px 90px; }
+    .screen.active { display: block; }
+
+    /* ===== BOTÕES ===== */
+    .btn {
+      display: inline-block;
+      padding: 0.875rem 1.75rem;
+      font-family: var(--font-main);
+      font-size: 0.9375rem;
+      font-weight: 500;
+      text-align: center;
+      border: none;
+      border-radius: var(--btn-radius);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background-color: var(--color-primary);
+      color: white;
+    }
+    .btn-primary:hover { background-color: var(--color-primary-dark); }
+    .btn-secondary {
+      background-color: transparent;
+      color: var(--color-text);
+      border: 1px solid var(--color-border);
+    }
+    .btn-secondary:hover { background-color: var(--color-bg-alt); border-color: var(--color-text-light); }
+    .btn-group { display: flex; gap: var(--space-sm); flex-wrap: wrap; }
+    .btn-small { padding: 0.5rem 1rem; font-size: 0.8rem; }
+
+    /* ===== CARDS DE SERVIDORES (compactos) ===== */
+    .servers-list { display: flex; flex-direction: column; gap: 12px; }
+    .server-card {
+      background-color: var(--color-white);
+      border: 1px solid var(--color-border);
+      border-radius: var(--border-radius);
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+    }
+    .server-card:active { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
+    .server-avatar {
+      width: 45px;
+      height: 45px;
+      border-radius: 8px;
+      background-color: var(--color-primary-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .server-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .server-info { flex: 1; min-width: 0; }
+    .server-header {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-bottom: 2px;
+    }
+    .server-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--color-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 120px;
+    }
+    .hot-badge {
+      background: linear-gradient(135deg, #ff6b6b, #ff4757);
+      color: white;
+      font-size: 0.55rem;
+      font-weight: 700;
+      padding: 2px 4px;
+      border-radius: 30px;
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      margin-left: 4px;
+    }
+    .badge {
+      background-color: var(--color-primary-light);
+      border: 1px solid var(--color-primary);
+      border-radius: 30px;
+      padding: 2px 6px;
+      font-size: 0.55rem;
+      font-weight: 600;
+      color: var(--color-primary);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .badge.online { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
+    .badge.offline { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+    .server-description {
+      font-size: 0.75rem;
+      color: var(--color-text-light);
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .server-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.65rem;
+      color: var(--color-text-light);
+      flex-wrap: wrap;
+    }
+    .server-meta .material-icons { font-size: 12px; color: var(--color-primary); }
+
+    /* Barra de ping */
+    .ping-bar-container {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .ping-bar {
+      width: 25px;
+      height: 4px;
+      background-color: var(--color-border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .ping-fill {
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s, background-color 0.3s;
+    }
+    .ping-fill.green { background-color: var(--color-success); }
+    .ping-fill.yellow { background-color: var(--color-warning); }
+    .ping-fill.red { background-color: var(--color-danger); }
+
+    .server-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+    .action-btn {
+      background: transparent;
+      border: 1px solid var(--color-border);
+      border-radius: 30px;
+      padding: 3px 6px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      color: var(--color-text);
+      cursor: pointer;
+      font-size: 0.65rem;
+      transition: all 0.2s;
+    }
+    .action-btn:hover { background: var(--color-primary-light); border-color: var(--color-primary); }
+    .action-btn.danger:hover { background: var(--color-danger); color: white; border-color: var(--color-danger); }
+
+    /* ===== TOP SERVERS ===== */
+    .top-grid { display: flex; gap: 10px; align-items: center; justify-content: center; margin: 20px 0; }
+    .top-card {
+      flex: 1;
+      max-width: 160px;
+      background: var(--color-white);
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      padding: 10px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .top-card:active { transform: translateY(-4px); }
+    .top-card img { width: 100%; height: 90px; object-fit: cover; border-radius: 12px; margin-bottom: 6px; }
+    .top-card .name { font-size: 0.9rem; font-weight: 600; }
+    .top-card .likes { font-size: 0.7rem; color: var(--color-primary); display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+    .vs-badge {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--color-primary);
+      background: var(--color-primary-light);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--color-primary);
+      margin: 0 5px;
+    }
+
+    /* ===== FEED DE ATIVIDADES ===== */
+    .activity-feed {
+      background-color: var(--color-white); border: 1px solid var(--color-border);
+      border-radius: 12px; padding: 10px; margin: 20px 0; max-height: 160px; overflow-y: auto;
+    }
+    .activity-feed-title {
+      font-weight: 600;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.85rem;
+    }
+    .activity-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 0;
+      border-bottom: 1px solid var(--color-border);
+      font-size: 0.75rem;
+    }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-item .material-icons { color: var(--color-primary); font-size: 14px; }
+    .activity-time { margin-left: auto; font-size: 0.55rem; color: var(--color-text-light); }
+
+    /* ===== TELAS DE AUTENTICAÇÃO ===== */
+    .auth-screen {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 20px;
+    }
+    .auth-card {
+      background-color: var(--color-white); border: 1px solid var(--color-border);
+      border-radius: 16px; padding: 40px 32px; width: 100%; max-width: 400px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+    }
+    .auth-title { font-size: 2rem; font-weight: 300; text-align: center; margin-bottom: 8px; color: var(--color-primary); }
+    .auth-subtitle { font-size: 0.9rem; color: var(--color-text-light); text-align: center; margin-bottom: 32px; }
+    .form-group { margin-bottom: 20px; }
+    .form-label { display: block; font-size: 0.8rem; font-weight: 500; color: var(--color-text-light); margin-bottom: 6px; }
+    .form-input {
+      width: 100%; padding: 12px 16px; background-color: var(--color-white);
+      border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text);
+      font-size: 1rem; outline: none; transition: border 0.2s;
+    }
+    .form-input:focus { border-color: var(--color-primary); }
+    .form-row { display: flex; gap: 8px; }
+    .form-row .form-input { flex: 1; }
+    .divider { display: flex; align-items: center; gap: 16px; margin: 24px 0; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--color-border); }
+    .divider span { font-size: 0.8rem; color: var(--color-text-light); }
+
+    /* ===== PERFIL E CONFIGURAÇÕES ===== */
+    .profile-header {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      margin-bottom: 24px;
+      position: relative;
+    }
+    .profile-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 16px;
+      object-fit: cover;
+      border: 2px solid var(--color-primary);
+      cursor: pointer;
+      transition: opacity 0.2s;
+      background-color: var(--color-primary-light);
+    }
+    .profile-avatar:hover {
+      opacity: 0.8;
+    }
+    .profile-name { font-size: 1.4rem; font-weight: 600; }
+    .avatar-upload {
+      position: absolute;
+      bottom: 0;
+      left: 60px;
+      background: var(--color-primary);
+      color: white;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      cursor: pointer;
+      border: 2px solid var(--color-white);
+    }
+    .avatar-upload input {
+      display: none;
+    }
+
+    .settings-section {
+      background-color: var(--color-white); border: 1px solid var(--color-border);
+      border-radius: 12px; padding: 16px; margin-bottom: 20px;
+    }
+    .settings-section-title {
+      font-size: 1.1rem;
+      font-weight: 500;
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-label-title { font-weight: 500; font-size: 0.9rem; }
+    .settings-label-desc { font-size: 0.75rem; color: var(--color-text-light); }
+
+    .toggle-switch {
+      position: relative; width: 44px; height: 22px;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: var(--color-border); border-radius: 22px; transition: 0.2s;
+    }
+    .toggle-slider::before {
+      position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px;
+      background-color: white; border-radius: 50%; transition: 0.2s;
+    }
+    input:checked + .toggle-slider { background-color: var(--color-primary); }
+    input:checked + .toggle-slider::before { transform: translateX(22px); }
+
+    .settings-select {
+      padding: 6px 10px; background-color: var(--color-white);
+      border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text); font-size: 0.85rem;
+    }
+
+    /* ===== TABELA DE LOGS / DENÚNCIAS ===== */
+    .logs-table, .reports-table {
+      width: 100%; border-collapse: collapse; background-color: var(--color-white);
+      border: 1px solid var(--color-border); border-radius: 12px; overflow: hidden;
+      font-size: 0.85rem;
+    }
+    .logs-table th, .logs-table td,
+    .reports-table th, .reports-table td {
+      padding: 8px; text-align: left; border-bottom: 1px solid var(--color-border);
+    }
+    .logs-table th, .reports-table th {
+      background-color: var(--color-primary-light); color: var(--color-primary);
+      font-weight: 600; font-size: 0.75rem;
+    }
+    .log-info { color: #2ecc71; }
+    .log-error { color: #e74c3c; }
+    .log-warn { color: #f39c12; }
+
+    /* ===== MODAIS ===== */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      cursor: pointer;
+    }
+    .modal.active { display: flex; }
+    .modal-content {
+      width: 90%;
+      max-width: 400px;
+      background-color: var(--color-white);
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      padding: 24px;
+      max-height: 80vh;
+      overflow-y: auto;
+      cursor: default;
+    }
+    .modal-image {
+      width: 100%;
+      max-height: 200px;
+      object-fit: contain;
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+
+    /* ===== TOAST ===== */
+    .toast-container {
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+      z-index: 300; display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+    }
+    .toast {
+      background-color: var(--color-white); border: 1px solid var(--color-primary);
+      border-radius: 40px; padding: 10px 24px; color: var(--color-text);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1); animation: slideUp 0.3s;
+      font-size: 0.9rem;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== LOADER ===== */
+    .loader {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+      background-color: var(--color-bg); z-index: 1000;
+      display: flex; justify-content: center; align-items: center; transition: opacity 0.3s;
+    }
+    .loader.hidden { opacity: 0; pointer-events: none; }
+    .loader-spinner {
+      width: 48px; height: 48px; border: 4px solid var(--color-primary-light);
+      border-top-color: var(--color-primary); border-radius: 50%; animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===== PULL-TO-REFRESH ===== */
+    .pull-to-refresh { text-align: center; padding: 10px; color: var(--color-text-light); display: none; }
+
+    /* ===== ÍCONES SOCIAIS ===== */
+    .social-icons {
+      display: flex; gap: 4px; margin-top: 4px;
+    }
+    .social-icon {
+      width: 24px; height: 24px; border-radius: 50%;
+      background-color: var(--color-primary-light);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--color-primary); cursor: pointer;
+      transition: all 0.2s;
+    }
+    .social-icon:hover {
+      background-color: var(--color-primary);
+      color: white;
+    }
+
+    /* ===== LISTA DE MEUS SERVIDORES ===== */
+    .my-server-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .my-server-item:last-child { border-bottom: none; }
+    .my-server-info { flex: 1; }
+    .my-server-name { font-weight: 600; font-size: 0.9rem; }
+    .my-server-ip { font-size: 0.75rem; color: var(--color-text-light); }
+    .my-server-actions { display: flex; gap: 6px; }
+
+    /* ===== TELA DE MANUTENÇÃO ===== */
+    #maintenanceScreen {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--color-bg);
+      z-index: 10000;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      text-align: center;
+    }
+    #maintenanceScreen i { font-size: 80px; color: #ffaa00; margin-bottom: 20px; animation: spin 4s linear infinite; }
+    #maintenanceScreen h2 { color: #ffaa00; margin-bottom: 10px; }
+
+    /* ===== ESTATÍSTICAS ===== */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .stat-card {
+      background: var(--color-white);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-number {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--color-primary);
+    }
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--color-text-light);
+    }
+    .chart-container {
+      background: var(--color-white);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 16px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body data-theme="light">
+  <!-- Áudio de clique (opcional) -->
+  <audio id="clickSound" src="ddr.wav" preload="auto"></audio>
+
+  <!-- Loader -->
+  <div id="loader" class="loader"><div class="loader-spinner"></div></div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Header -->
+  <header class="header" id="mainHeader" style="display: none;">
+    <div class="header-inner">
+      <a href="#" class="logo">NEXORA</a>
+      <button class="nav-toggle" id="navToggle" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Tela de Manutenção -->
+  <div id="maintenanceScreen">
+    <i class="material-icons">build</i>
+    <h2>Modo Manutenção</h2>
+    <p style="color: var(--color-text-light);">O sistema está passando por manutenção. Tente novamente mais tarde.</p>
+  </div>
+
+  <!-- ===== TELA DE LOGIN ===== -->
+  <div id="loginScreen" class="screen">
+    <div class="auth-screen">
+      <div class="auth-card">
+        <div class="auth-title">Nexora</div>
+        <div class="auth-subtitle">Faça login para continuar</div>
+        <div class="form-group">
+          <label class="form-label">E-mail</label>
+          <input type="email" id="loginEmail" class="form-input" placeholder="seu@email.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Senha</label>
+          <input type="password" id="loginSenha" class="form-input" placeholder="********">
+        </div>
+        <button class="btn btn-primary" id="loginBtn">Entrar</button>
+        <div id="loginError" style="color: var(--color-danger); margin-top: 10px; text-align: center;"></div>
+        <div class="divider"><span>ou</span></div>
+        <button class="btn btn-secondary" id="guestLoginBtn">Entrar como convidado</button>
+        <button class="btn btn-secondary" id="githubLoginBtn" style="margin-top:8px;">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20" style="margin-right: 8px;">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          Entrar com GitHub
+        </button>
+        <p class="login-footer">Não tem conta? <a id="goToCadastro">Cadastre-se</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TELA DE CADASTRO ===== -->
+  <div id="cadastroScreen" class="screen">
+    <div class="auth-screen">
+      <div class="auth-card">
+        <div class="auth-title">Criar Conta</div>
+        <div class="auth-subtitle">Preencha seus dados</div>
+        <div class="form-group">
+          <label class="form-label">Nome</label>
+          <input type="text" id="cadastroNome" class="form-input" placeholder="Seu nome">
+        </div>
+        <div class="form-group">
+          <label class="form-label">E-mail</label>
+          <input type="email" id="cadastroEmail" class="form-input" placeholder="seu@email.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Senha</label>
+          <input type="password" id="cadastroSenha" class="form-input" placeholder="********">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirmar senha</label>
+          <input type="password" id="cadastroConfirmar" class="form-input" placeholder="********">
+        </div>
+        <button class="btn btn-primary" id="cadastroBtn">Cadastrar</button>
+        <div id="cadastroError" style="color: var(--color-danger); margin-top: 10px;"></div>
+        <p class="login-footer">Já tem conta? <a id="goToLogin">Faça login</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TELA PRINCIPAL (SERVIDORES) ===== -->
+  <div id="serversScreen" class="screen">
+    <div class="search-wrapper" style="display: flex; align-items: center; gap: 8px; background: var(--color-white); border: 1px solid var(--color-border); border-radius: 60px; padding: 4px 4px 4px 16px; margin-bottom: 20px;">
+      <input type="text" id="searchInput" placeholder="Buscar servidores..." style="flex:1; background: transparent; border: none; outline: none;">
+      <button class="icon-btn" id="filterBtn" style="background: var(--color-primary-light); border: none; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+        <span class="material-icons" style="color: var(--color-primary);">tune</span>
+      </button>
+    </div>
+
+    <div class="pull-to-refresh" id="ptr">↓ Arraste para atualizar</div>
+
+    <div class="top-section">
+      <span class="section-label">Confronto da hora</span>
+      <div class="top-grid" id="topServers"></div>
+    </div>
+
+    <div class="activity-feed" id="activityFeed">
+      <div class="activity-feed-title">
+        <span class="material-icons">favorite</span> Atividades recentes
+      </div>
+      <div id="activityList"></div>
+    </div>
+
+    <div class="servers-list" id="serversList"></div>
+    <div id="loadingMore" style="display:none; text-align:center; padding:20px;">Carregando...</div>
+  </div>
+
+  <!-- ===== TELA DE PERFIL ===== -->
+  <div id="profileScreen" class="screen">
+    <button class="back-button" onclick="goBack()">
+      <span class="material-icons">arrow_back</span> Voltar
+    </button>
+    <div class="profile-header">
+      <img src="https://mc-heads.net/avatar/Steve" class="profile-avatar" id="profileAvatar" onclick="document.getElementById('avatarUpload').click()" onerror="this.src='https://mc-heads.net/avatar/Steve'">
+      <label class="avatar-upload" for="avatarUpload">
+        <span class="material-icons">edit</span>
+        <input type="file" id="avatarUpload" accept="image/*" style="display: none;">
+      </label>
+      <div>
+        <div class="profile-name" id="profileDisplayName">Carregando...</div>
+        <div style="color: var(--color-text-light); font-size:0.9rem; display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+          <span>UUID:</span>
+          <span id="userUUID" style="font-family: monospace; background: var(--color-primary-light); padding: 2px 6px; border-radius: 4px;"></span>
+          <button class="btn btn-secondary btn-small" id="copyUuidBtn" style="padding: 2px 8px;">Copiar</button>
+        </div>
+        <div id="accountCreationDate" style="font-size:0.8rem; color:var(--color-text-light); margin-top:4px;"></div>
+      </div>
+    </div>
+
+    <!-- Preferências -->
+    <div class="settings-section">
+      <div class="settings-section-title">
+        <span class="material-icons">settings</span> Preferências
+      </div>
+      <div class="settings-row">
+        <span class="settings-label-title">Mostrar ping</span>
+        <label class="toggle-switch"><input type="checkbox" id="pingToggle"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label-title">Som de clique</span>
+        <label class="toggle-switch"><input type="checkbox" id="soundToggle" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label-title">Modo Turbo</span>
+        <label class="toggle-switch"><input type="checkbox" id="turboModeToggle"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label-title">Idioma</span>
+        <select id="languageSelector" class="settings-select">
+          <option value="pt">Português</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label-title">Notificações</span>
+        <label class="toggle-switch"><input type="checkbox" id="notificationsToggle" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label-title">Modo economia</span>
+        <label class="toggle-switch"><input type="checkbox" id="economyToggle"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label-title">Tema</span>
+        <select id="themeSelector" class="settings-select">
+          <option value="light">Claro</option>
+          <option value="dark">Escuro</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label-title">Tamanho da fonte</span>
+        <select id="fontSizeSelector" class="settings-select">
+          <option value="small">Pequeno</option>
+          <option value="medium" selected>Médio</option>
+          <option value="large">Grande</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Conta (sem exportar dados) -->
+    <div class="settings-section">
+      <div class="settings-section-title">
+        <span class="material-icons">person</span> Conta
+      </div>
+      <div class="settings-row">
+        <span class="settings-label-title">Nome</span>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="settingsUsername" class="form-input" style="flex:1;" placeholder="Seu nome">
+          <button class="btn btn-secondary btn-small" id="saveUsernameBtn">Salvar</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label-title">E-mail</span>
+        <span class="settings-label-desc" id="userEmailDisplay" style="font-family: monospace;"></span>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label-title">Provedor</span>
+        <span id="userProvider">carregando...</span>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label-title">UUID</span>
+        <span id="userUUID2" style="font-family: monospace;">-</span>
+        <button class="btn btn-secondary btn-small" id="copyUuidBtn2">Copiar</button>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label-title">Limpar cache</span>
+        <button class="btn btn-secondary btn-small" id="clearCacheBtn">Limpar</button>
+      </div>
+    </div>
+
+    <!-- Meus Servidores -->
+    <div class="settings-section">
+      <div class="settings-section-title">
+        <span class="material-icons">gamepad</span> Meus Servidores
+      </div>
+      <div id="myServersList" style="max-height: 300px; overflow-y: auto;"></div>
+    </div>
+
+    <!-- Minhas Denúncias -->
+    <div class="settings-section">
+      <div class="settings-section-title">
+        <span class="material-icons">flag</span> Minhas Denúncias
+      </div>
+      <div id="myReportsList" style="max-height: 200px; overflow-y: auto;"></div>
+    </div>
+
+    <!-- Versão -->
+    <div class="settings-section">
+      <div class="settings-section-title">
+        <span class="material-icons">info</span> Sobre
+      </div>
+      <div class="settings-row">
+        <span class="settings-label-title">Versão</span>
+        <span id="appVersionDisplay">carregando...</span>
+      </div>
+    </div>
+
+    <button class="btn btn-secondary" id="logoutBtn" style="margin-top:24px;">Sair</button>
+  </div>
+
+  <!-- ===== TELA DE FAVORITOS ===== -->
+  <div id="favoritesScreen" class="screen">
+    <button class="back-button" onclick="goBack()">
+      <span class="material-icons">arrow_back</span> Voltar
+    </button>
+    <h2 style="margin-bottom:20px;">⭐ Favoritos</h2>
+    <div class="servers-list" id="favoritesList"></div>
+  </div>
+
+  <!-- ===== TELA DE POSTAR SERVIDOR ===== -->
+  <div id="postScreen" class="screen">
+    <button class="back-button" onclick="goBack()">
+      <span class="material-icons">arrow_back</span> Voltar
+    </button>
+    <h2 style="margin-bottom:20px;">📤 Publicar Servidor</h2>
+    <div class="settings-section">
+      <div class="form-group">
+        <label class="form-label">Nome (max 23)</label>
+        <input type="text" id="postName" class="form-input" maxlength="23" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descrição</label>
+        <textarea id="postDesc" class="form-input" rows="2" maxlength="100" required></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="flex:2;">
+          <label class="form-label">IP</label>
+          <input type="text" id="postIp" class="form-input" required>
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label class="form-label">Porta</label>
+          <input type="number" id="postPort" class="form-input" value="25565" min="1" max="65535" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Máximo de jogadores (opcional)</label>
+        <input type="number" id="postMaxPlayers" class="form-input" min="1" max="100000" placeholder="ex: 100">
+      </div>
+      <div class="form-group">
+        <label class="form-label">URL da Imagem (opcional)</label>
+        <input type="url" id="postImg" class="form-input" placeholder="https://...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Categoria</label>
+        <select id="postCat" class="form-input">
+          <option value="survival">Survival</option>
+          <option value="pvp">PvP</option>
+          <option value="anarquia">Anarquia</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <div style="display:flex; gap:20px;">
+          <label><input type="radio" name="serverType" value="java" checked> Java</label>
+          <label><input type="radio" name="serverType" value="bedrock"> Bedrock</label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Versão</label>
+        <input type="text" id="postVersion" class="form-input" placeholder="1.20.4">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Discord (opcional)</label>
+        <input type="url" id="postDiscord" class="form-input" placeholder="https://discord.gg/...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">TikTok (opcional)</label>
+        <input type="url" id="postTikTok" class="form-input" placeholder="https://tiktok.com/@...">
+      </div>
+      <button class="btn btn-primary" id="postSubmitBtn">Publicar</button>
+    </div>
+  </div>
+
+  <!-- ===== TELA DE LOGS ===== -->
+  <div id="logsScreen" class="screen">
+    <button class="back-button" onclick="goBack()">
+      <span class="material-icons">arrow_back</span> Voltar
+    </button>
+    <h2 style="margin-bottom:20px;">📋 Logs do Sistema</h2>
+    <table class="logs-table">
+      <thead><tr><th>Timestamp</th><th>Nível</th><th>Mensagem</th></tr></thead>
+      <tbody id="logsTableBody"></tbody>
+    </table>
+    <button class="btn btn-secondary" id="clearLogsTableBtn" style="margin-top:16px;">Limpar logs</button>
+  </div>
+
+  <!-- ===== TELA DE ESTATÍSTICAS ===== -->
+  <div id="statsScreen" class="screen">
+    <button class="back-button" onclick="goBack()">
+      <span class="material-icons">arrow_back</span> Voltar
+    </button>
+    <h2 style="margin-bottom:20px;">📊 Estatísticas</h2>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number" id="totalServersStat">0</div>
+        <div class="stat-label">Servidores</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="totalUsersStat">0</div>
+        <div class="stat-label">Usuários</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="totalLikesStat">0</div>
+        <div class="stat-label">Curtidas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="totalReportsStat">0</div>
+        <div class="stat-label">Denúncias</div>
+      </div>
+    </div>
+    <div class="chart-container">
+      <canvas id="categoryChart"></canvas>
+    </div>
+  </div>
+
+  <!-- FAB -->
+  <button class="fab" id="fab">
+    <span class="material-icons">add</span>
+  </button>
+
+  <!-- Menu do FAB -->
+  <div class="fab-menu" id="fabMenu">
+    <div class="fab-menu-item" data-option="inicio"><span class="material-icons">home</span> <span>Início</span></div>
+    <div class="fab-menu-item" data-option="perfil"><span class="material-icons">person</span> <span>Perfil</span></div>
+    <div class="fab-menu-item" data-option="favoritos"><span class="material-icons">star</span> <span>Favoritos</span></div>
+    <div class="fab-menu-item" data-option="postar"><span class="material-icons">add_circle</span> <span>Publicar</span></div>
+    <div class="fab-menu-item" data-option="logs"><span class="material-icons">assignment</span> <span>Logs</span></div>
+    <div class="fab-menu-item" data-option="stats"><span class="material-icons">bar_chart</span> <span>Estatísticas</span></div>
+    <div class="fab-menu-item admin-only" id="adminMenuItem" data-option="admin" style="display: none;"><span class="material-icons">admin_panel_settings</span> <span>Admin</span></div>
+  </div>
+
+  <div class="overlay" id="overlay"></div>
+
+  <!-- Modal de filtro -->
+  <div id="filterPanel" class="modal">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <h4 style="margin-bottom:16px;">Categorias</h4>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <button class="btn btn-secondary" data-cat="all">Todos</button>
+        <button class="btn btn-secondary" data-cat="survival">Survival</button>
+        <button class="btn btn-secondary" data-cat="pvp">PvP</button>
+        <button class="btn btn-secondary" data-cat="anarquia">Anarquia</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de denúncia -->
+  <div id="reportModal" class="modal">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <h3 style="margin-bottom:16px;">Denunciar servidor</h3>
+      <div id="reportServerName" style="font-weight:600; margin-bottom:8px;"></div>
+      <div class="form-group">
+        <label class="form-label">Motivo</label>
+        <select id="reportReason" class="form-input">
+          <option value="Conteúdo impróprio">Conteúdo impróprio</option>
+          <option value="Assédio">Assédio</option>
+          <option value="Spam">Spam</option>
+          <option value="Servidor falso">Servidor falso</option>
+          <option value="Outro">Outro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Detalhes (opcional)</label>
+        <textarea id="reportDetails" class="form-input" rows="3"></textarea>
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn btn-secondary" id="cancelReportBtn">Cancelar</button>
+        <button class="btn btn-primary" id="submitReportBtn">Enviar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal do servidor -->
+  <div id="serverModal" class="modal">
+    <div class="modal-content" id="serverModalContent" onclick="event.stopPropagation()"></div>
+  </div>
+
+  <!-- Modal de edição -->
+  <div id="editServerModal" class="modal">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <h3 style="margin-bottom:16px;">Editar Servidor</h3>
+      <div class="form-group">
+        <label class="form-label">Nome</label>
+        <input type="text" id="editName" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descrição</label>
+        <textarea id="editDesc" class="form-input" rows="2"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="flex:2;">
+          <label class="form-label">IP</label>
+          <input type="text" id="editIp" class="form-input">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label class="form-label">Porta</label>
+          <input type="number" id="editPort" class="form-input" min="1" max="65535">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">URL da Imagem</label>
+        <input type="url" id="editImg" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Categoria</label>
+        <select id="editCat" class="form-input">
+          <option value="survival">Survival</option>
+          <option value="pvp">PvP</option>
+          <option value="anarquia">Anarquia</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <div style="display:flex; gap:20px;">
+          <label><input type="radio" name="editType" value="java"> Java</label>
+          <label><input type="radio" name="editType" value="bedrock"> Bedrock</label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Versão</label>
+        <input type="text" id="editVersion" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Discord</label>
+        <input type="url" id="editDiscord" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label">TikTok</label>
+        <input type="url" id="editTikTok" class="form-input">
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn btn-secondary" id="cancelEditBtn">Cancelar</button>
+        <button class="btn btn-primary" id="saveEditBtn">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========== FUNÇÃO PARA GERAR UUID LOCAL ==========
+    function generateLocalUUID() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+
+    // ========== HISTÓRICO DE NAVEGAÇÃO ==========
+    let historyStack = ['serversScreen']; // Começa na tela de servidores (mas será alterado após login)
+    let currentScreen = 'serversScreen';
+
+    // Função para navegar (adiciona ao histórico)
+    function navigate(screenId) {
+      if (screenId === currentScreen) return;
+      historyStack.push(screenId);
+      currentScreen = screenId;
+      showScreen(screenId);
+    }
+
+    // Função para voltar
+    function goBack() {
+      if (historyStack.length > 1) {
+        historyStack.pop(); // remove atual
+        const previous = historyStack[historyStack.length - 1];
+        currentScreen = previous;
+        showScreen(previous);
+      } else {
+        // Se estiver na tela inicial e tentar voltar, talvez minimize? Aqui apenas mostramos um toast
+        showToast('Não há página anterior');
+      }
+    }
+
+    // Mostrar tela sem modificar o histórico (usado internamente)
+    function showScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+      if (screenId === 'serversScreen') {
+        header.style.display = 'flex';
+        fab.classList.remove('hidden');
+      } else {
+        header.style.display = 'none';
+        fab.classList.add('hidden');
+      }
+      playClick();
+    }
+
+    // Lidar com o botão físico de voltar do Android
+    window.addEventListener('popstate', function(event) {
+      // Quando o usuário pressiona voltar, restauramos o estado anterior
+      if (event.state && event.state.screen) {
+        showScreen(event.state.screen);
+        currentScreen = event.state.screen;
+      } else {
+        // Se não houver estado, vai para a tela inicial
+        showScreen('serversScreen');
+        currentScreen = 'serversScreen';
+      }
+    });
+
+    // Ao navegar, adicionamos um estado ao histórico
+    function navigateWithHistory(screenId) {
+      history.pushState({ screen: screenId }, '', `#${screenId}`);
+      navigate(screenId);
+    }
+
+    // ========== CONFIGURAÇÃO FIREBASE ==========
+    const firebaseConfig = {
+      apiKey: "AIzaSyA6PHHpr5vhHF0AxPjyA3qR20OHZnnvUTQ",
+      authDomain: "nexora-mc-884dd.firebaseapp.com",
+      databaseURL: "https://nexora-mc-884dd-default-rtdb.firebaseio.com",
+      projectId: "nexora-mc-884dd",
+      storageBucket: "nexora-mc-884dd.firebasestorage.app",
+      messagingSenderId: "162553177248",
+      appId: "1:162553177248:android:21d8e83492e2e28cfd15c5"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    // ========== LISTA DE ADMINS (UUIDs) ==========
+    const ADMIN_UUIDS = [
+      "811f532b-7af6-47c0-aba4-66ff8a9ab031" // Substitua pelo seu UUID real
+    ];
+
+    // ========== LISTA DE PALAVRAS PROIBIDAS ==========
+    const BANNED_WORDS = [
+      'puta', 'puto', 'caralho', 'merda', 'bosta', 'foda', 'corno', 'otario', 'babaca',
+      'vagabundo', 'arrombado', 'desgraça', 'piranha', 'cusão', 'viado', 'bicha', 'safado',
+      'cacete', 'porra', 'krl', 'pqp', 'vsf', 'tnc', 'fdp', 'arromba', 'xota', 'buceta',
+      'cu', 'rola', 'pau', 'piroca', 'pinto', 'caralho', 'putaria', 'sexo', 'transa',
+      'nazista', 'racista', 'homofobico', 'pedofilo', 'estuprador', 'assassino'
+    ];
+
+    function containsBannedWords(text) {
+      if (!text) return false;
+      const lower = text.toLowerCase();
+      return BANNED_WORDS.some(word => lower.includes(word));
+    }
+
+    // ========== VERIFICAÇÃO DE CONEXÃO ==========
+    window.addEventListener('online', () => showToast('Conexão restabelecida'));
+    window.addEventListener('offline', () => showToast('Sem conexão com a internet'));
+
+    function getFriendlyErrorMessage(error) {
+      const code = error.code;
+      if (!navigator.onLine) return 'Sem conexão com a internet. Verifique sua rede.';
+      if (code === 'auth/email-already-in-use') return 'Este e-mail já está cadastrado.';
+      if (code === 'auth/invalid-email') return 'E-mail inválido.';
+      if (code === 'auth/weak-password') return 'A senha deve ter pelo menos 6 caracteres.';
+      if (code === 'auth/user-not-found' || code === 'auth/wrong-password') return 'E-mail ou senha incorretos.';
+      if (code === 'auth/network-request-failed') return 'Falha de rede. Tente novamente.';
+      if (code === 'auth/too-many-requests') return 'Muitas tentativas. Aguarde e tente novamente.';
+      if (code === 'auth/popup-closed-by-user') return 'Popup de login foi fechado. Tente novamente.';
+      if (code === 'auth/cancelled-popup-request') return 'Login cancelado.';
+      return 'Ocorreu um erro. Tente novamente.';
+    }
+
+    function truncateString(str, maxLength = 20) {
+      if (!str) return '';
+      if (str.length <= maxLength) return str;
+      const half = Math.floor((maxLength - 3) / 2);
+      return str.slice(0, half) + '...' + str.slice(-half);
+    }
+
+    // ========== VARIÁVEIS GLOBAIS ==========
+    let USER_ID = null;
+    let username = 'Jogador';
+    let userEmail = '';
+    let isGuest = false;
+    let showPing = localStorage.getItem('showPing') === 'true';
+    let soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
+    let turboMode = localStorage.getItem('turboMode') === 'true';
+    let theme = localStorage.getItem('theme') || 'light';
+    let notifications = localStorage.getItem('notifications') !== 'false';
+    let economyMode = localStorage.getItem('economyMode') === 'true';
+    let language = localStorage.getItem('language') || 'pt';
+    let favorites = JSON.parse(localStorage.getItem('nexora_favorites') || '[]');
+    let fontSize = localStorage.getItem('fontSize') || 'medium';
+
+    let serverData = {};
+    let serverKeys = [];
+    let cardElements = new Map();
+    let currentCategory = 'all';
+    let searchTerm = '';
+    let currentReportServer = null;
+    let currentEditServerKey = null;
+
+    // Intervalo para atualização da API
+    let apiUpdateInterval = null;
+
+    // Elementos
+    const loader = document.getElementById('loader');
+    const toastContainer = document.getElementById('toastContainer');
+    const clickSound = document.getElementById('clickSound');
+    const fab = document.getElementById('fab');
+    const fabMenu = document.getElementById('fabMenu');
+    const overlay = document.getElementById('overlay');
+    const header = document.getElementById('mainHeader');
+    const navToggle = document.getElementById('navToggle');
+    const serversList = document.getElementById('serversList');
+    const topServersDiv = document.getElementById('topServers');
+    const searchInput = document.getElementById('searchInput');
+    const filterBtn = document.getElementById('filterBtn');
+    const filterPanel = document.getElementById('filterPanel');
+    const filterOptions = document.querySelectorAll('#filterPanel .btn');
+    const activityList = document.getElementById('activityList');
+    const ptrDiv = document.getElementById('ptr');
+    const logsTableBody = document.getElementById('logsTableBody');
+    const profileDisplayName = document.getElementById('profileDisplayName');
+    const userUUID = document.getElementById('userUUID');
+    const userUUID2 = document.getElementById('userUUID2');
+    const userEmailDisplay = document.getElementById('userEmailDisplay');
+    const userProvider = document.getElementById('userProvider');
+    const settingsUsername = document.getElementById('settingsUsername');
+    const profileAvatar = document.getElementById('profileAvatar');
+    const myReportsList = document.getElementById('myReportsList');
+    const myServersList = document.getElementById('myServersList');
+    const themeSelector = document.getElementById('themeSelector');
+    const editServerModal = document.getElementById('editServerModal');
+    const maintenanceScreen = document.getElementById('maintenanceScreen');
+    const adminMenuItem = document.getElementById('adminMenuItem');
+    const appVersionDisplay = document.getElementById('appVersionDisplay');
+    const languageSelector = document.getElementById('languageSelector');
+    const notificationsToggle = document.getElementById('notificationsToggle');
+    const economyToggle = document.getElementById('economyToggle');
+    const accountCreationDate = document.getElementById('accountCreationDate');
+
+    // Elementos de estatísticas
+    const totalServersStat = document.getElementById('totalServersStat');
+    const totalUsersStat = document.getElementById('totalUsersStat');
+    const totalLikesStat = document.getElementById('totalLikesStat');
+    const totalReportsStat = document.getElementById('totalReportsStat');
+    const categoryChartCanvas = document.getElementById('categoryChart');
+    let categoryChart = null;
+
+    // Upload de avatar
+    const avatarUpload = document.getElementById('avatarUpload');
+
+    function playClick() {
+      if (soundEnabled && clickSound) {
+        clickSound.currentTime = 0;
+        clickSound.play().catch(() => {});
+      }
+    }
+
+    function showToast(message, duration = 3000) {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = message;
+      toastContainer.appendChild(toast);
+      setTimeout(() => toast.remove(), duration);
+    }
+
+    function hideLoader() { loader.classList.add('hidden'); }
+    function isAdmin() { return ADMIN_UUIDS.includes(USER_ID); }
+
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+    }
+    setTheme(theme);
+    themeSelector.value = theme;
+    themeSelector.addEventListener('change', (e) => setTheme(e.target.value));
+
+    // Configurações adicionais
+    languageSelector.value = language;
+    notificationsToggle.checked = notifications;
+    economyToggle.checked = economyMode;
+
+    languageSelector.addEventListener('change', (e) => {
+      language = e.target.value;
+      localStorage.setItem('language', language);
+      showToast('Idioma alterado (simulado)');
+    });
+
+    notificationsToggle.addEventListener('change', (e) => {
+      notifications = e.target.checked;
+      localStorage.setItem('notifications', notifications);
+    });
+
+    economyToggle.addEventListener('change', (e) => {
+      economyMode = e.target.checked;
+      localStorage.setItem('economyMode', economyMode);
+    });
+
+    document.getElementById('clearCacheBtn').addEventListener('click', () => {
+      localStorage.clear();
+      showToast('Cache limpo. Recarregue a página.');
+    });
+
+    // ========== AVATAR UPLOAD ==========
+    avatarUpload.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        const base64 = ev.target.result;
+        profileAvatar.src = base64;
+        if (USER_ID) {
+          localStorage.setItem(`userAvatar_${USER_ID}`, base64);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function loadAvatar() {
+      if (USER_ID) {
+        const saved = localStorage.getItem(`userAvatar_${USER_ID}`);
+        if (saved) {
+          profileAvatar.src = saved;
+        } else {
+          // Tenta carregar a skin do Minecraft pelo nome de usuário
+          profileAvatar.src = `https://mc-heads.net/avatar/${username}`;
+        }
+      } else {
+        profileAvatar.src = 'https://mc-heads.net/avatar/Steve';
+      }
+    }
+
+    // ========== CARREGAR DATA DE CRIAÇÃO DA CONTA ==========
+    async function loadAccountCreationDate() {
+      if (!USER_ID || isGuest) {
+        accountCreationDate.innerText = 'Conta local';
+        return;
+      }
+      const snap = await db.ref('users/' + USER_ID + '/createdAt').once('value');
+      const timestamp = snap.val();
+      if (timestamp) {
+        const date = new Date(timestamp);
+        accountCreationDate.innerText = `Conta criada em: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+      } else {
+        accountCreationDate.innerText = '';
+      }
+    }
+
+    function loadConfig() {
+      db.ref('config').on('value', (snap) => {
+        const config = snap.val() || {};
+        maintenanceScreen.style.display = config.maintenance ? 'flex' : 'none';
+        if (appVersionDisplay) appVersionDisplay.innerText = config.version || 'v1.0.0.501.1';
+      });
+    }
+
+    function loadServers() {
+      db.ref('servers').on('value', (snap) => {
+        serverData = snap.val() || {};
+        serverKeys = Object.keys(serverData).sort((a,b) => (serverData[b].likes||0) - (serverData[a].likes||0));
+        renderServers();
+        renderTopServers();
+        if (USER_ID) loadMyServers();
+        updateStats();
+        startApiUpdates();
+      });
+    }
+
+    // Função para atualizar dados via API mcapi.us
+    async function updateServerStatus() {
+      if (!serverKeys.length) return;
+      const promises = serverKeys.map(async (key) => {
+        const server = serverData[key];
+        if (!server || !server.link) return;
+        const [ip, port] = server.link.split(':');
+        const apiPort = port || '25565';
+        try {
+          const response = await fetch(`https://mcapi.us/server/status?ip=${ip}&port=${apiPort}`);
+          const data = await response.json();
+          if (data.status === 'success') {
+            server.status = data.online ? 'online' : 'offline';
+            server.playersNow = data.players?.now || 0;
+            server.playersMax = data.players?.max || server.maxPlayers || 0;
+            server.motd = data.motd || '';
+            server.ping = Math.floor(Math.random() * 100) + 20;
+          } else {
+            server.status = 'offline';
+            server.playersNow = 0;
+          }
+        } catch (e) {
+          server.status = 'offline';
+          server.playersNow = 0;
+        }
+      });
+      await Promise.allSettled(promises);
+      renderServers();
+    }
+
+    function startApiUpdates() {
+      if (apiUpdateInterval) clearInterval(apiUpdateInterval);
+      apiUpdateInterval = setInterval(() => {
+        updateServerStatus();
+      }, 8000);
+    }
+
+    function getPingStyle(ping) {
+      if (!ping) ping = 0;
+      const maxPing = 300;
+      let width = Math.min(100, (ping / maxPing) * 100);
+      let colorClass = 'green';
+      if (ping > 200) colorClass = 'red';
+      else if (ping > 100) colorClass = 'yellow';
+      return { width: width + '%', colorClass };
+    }
+
+    function renderServers() {
+      if (!serversList) return;
+      const filtered = serverKeys.filter(key => {
+        const s = serverData[key];
+        if (currentCategory !== 'all' && s.cat !== currentCategory) return false;
+        if (searchTerm) return (s.name && s.name.toLowerCase().includes(searchTerm)) || (s.desc && s.desc.toLowerCase().includes(searchTerm));
+        return true;
+      });
+      serversList.innerHTML = '';
+      if (filtered.length === 0) {
+        serversList.innerHTML = '<div class="settings-section" style="text-align:center;">Nenhum servidor encontrado</div>';
+        return;
+      }
+      filtered.forEach(key => {
+        const s = serverData[key];
+        s.key = key;
+        const card = document.createElement('div');
+        card.className = 'server-card';
+        card.__key = key;
+        const pingStyle = showPing && s.ping ? getPingStyle(s.ping) : null;
+        const hotBadge = s.likes > 100 ? '<span class="hot-badge">🔥 HOT</span>' : '';
+        const playersText = (s.playersNow !== undefined && s.playersMax) ? `${s.playersNow}/${s.playersMax}` : '';
+        const imgHtml = s.img ? `<img src="${s.img}" onerror="this.style.display='none'">` : '';
+        card.innerHTML = `
+          <div class="server-avatar" data-key="${key}">
+            ${imgHtml}
+          </div>
+          <div class="server-info">
+            <div class="server-header">
+              <span class="server-name">${s.name || 'Sem nome'}</span>
+              ${hotBadge}
+              <span class="badge ${s.status || 'offline'}">${s.status || 'offline'}</span>
+              <span class="badge">${s.type || 'java'}</span>
+            </div>
+            <div class="server-description">${s.desc || ''}</div>
+            <div class="server-meta">
+              <span class="material-icons">link</span> ${s.link || 'sem ip'}
+              ${playersText ? `<span class="material-icons">people</span> ${playersText}` : ''}
+              ${showPing ? `
+                <div class="ping-bar-container">
+                  <span>${s.ping || '?'}ms</span>
+                  <div class="ping-bar">
+                    <div class="ping-fill ${pingStyle ? pingStyle.colorClass : ''}" style="width: ${pingStyle ? pingStyle.width : '0%'};"></div>
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+            <div class="social-icons">
+              ${s.discord ? `<div class="social-icon" onclick="window.open('${s.discord}', '_blank')"><span class="material-icons">chat</span></div>` : ''}
+              ${s.tiktok ? `<div class="social-icon" onclick="window.open('${s.tiktok}', '_blank')"><span class="material-icons">music_note</span></div>` : ''}
+            </div>
+          </div>
+          <div class="server-actions">
+            <span class="badge">${s.cat || 'outro'}</span>
+            <button class="action-btn fav-btn" data-key="${key}"><span class="material-icons">${favorites.includes(key) ? 'star' : 'star_border'}</span> Favoritar</button>
+            <button class="action-btn like-btn" data-key="${key}"><span class="material-icons">${(s.likes_by && s.likes_by[USER_ID]) ? 'favorite' : 'favorite_border'}</span> ${s.likes || 0}</button>
+            <button class="action-btn report-btn" data-key="${key}" style="color: var(--color-danger);"><span class="material-icons">flag</span> Denunciar</button>
+          </div>
+        `;
+        card.addEventListener('click', (e) => {
+          if (!e.target.closest('button') && !e.target.closest('.social-icon')) {
+            openServerModal(s);
+          }
+        });
+        serversList.appendChild(card);
+        cardElements.set(key, card);
+      });
+
+      document.querySelectorAll('.server-avatar').forEach(avatar => {
+        avatar.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const key = avatar.dataset.key;
+          const server = serverData[key];
+          if (server) openServerModal(server);
+        });
+      });
+    }
+
+    function renderTopServers() {
+      if (!topServersDiv) return;
+      const sorted = serverKeys.map(k => serverData[k]).filter(s => s.likes > 0).sort((a,b) => (b.likes||0) - (a.likes||0));
+      const topTwo = sorted.slice(0,2);
+      topServersDiv.innerHTML = '';
+      if (topTwo.length === 0) {
+        topServersDiv.innerHTML = '<div class="top-card" style="min-width:100%; text-align:center;">Nenhum servidor com likes</div>';
+        return;
+      }
+      topTwo.forEach((s, idx) => {
+        const card = document.createElement('div');
+        card.className = 'top-card';
+        const imgHtml = s.img ? `<img src="${s.img}" onerror="this.style.display='none'">` : '';
+        card.innerHTML = `${imgHtml}<div class="name">${s.name || '?'}</div><div class="likes"><span class="material-icons">favorite</span> ${s.likes||0}</div>`;
+        card.addEventListener('click', () => openServerModal(s));
+        topServersDiv.appendChild(card);
+        if (idx === 0 && topTwo.length === 2) {
+          const vs = document.createElement('div');
+          vs.className = 'vs-badge';
+          vs.innerText = 'VS';
+          topServersDiv.appendChild(vs);
+        }
+      });
+    }
+
+    function toggleLike(key) {
+      const server = serverData[key];
+      if (!server || !USER_ID) return;
+      const userLiked = server.likes_by && server.likes_by[USER_ID];
+      const newLiked = !userLiked;
+      const previousLikes = server.likes || 0;
+      const previousLikesBy = { ...(server.likes_by || {}) };
+
+      if (!server.likes_by) server.likes_by = {};
+      if (newLiked) {
+        server.likes_by[USER_ID] = true;
+        server.likes = (server.likes || 0) + 1;
+      } else {
+        delete server.likes_by[USER_ID];
+        server.likes = Math.max((server.likes || 1) - 1, 0);
+      }
+
+      const card = cardElements.get(key);
+      if (card) {
+        const btn = card.querySelector('.like-btn');
+        if (btn) btn.innerHTML = `<span class="material-icons">${newLiked ? 'favorite' : 'favorite_border'}</span> ${server.likes}`;
+        const hotBadge = card.querySelector('.hot-badge');
+        if (server.likes > 100 && !hotBadge) {
+          const nameSpan = card.querySelector('.server-name');
+          nameSpan.insertAdjacentHTML('afterend', '<span class="hot-badge">🔥 HOT</span>');
+        } else if (server.likes <= 100 && hotBadge) {
+          hotBadge.remove();
+        }
+      }
+      renderTopServers();
+      updateStats();
+
+      const updates = {};
+      updates[`servers/${key}/likes`] = server.likes;
+      updates[`servers/${key}/likes_by/${USER_ID}`] = newLiked ? true : null;
+      db.ref().update(updates).catch(() => {
+        server.likes = previousLikes;
+        server.likes_by = previousLikesBy;
+        if (card) {
+          const btn = card.querySelector('.like-btn');
+          if (btn) btn.innerHTML = `<span class="material-icons">${previousLikesBy[USER_ID] ? 'favorite' : 'favorite_border'}</span> ${previousLikes}`;
+        }
+        renderTopServers();
+        showToast('Erro ao curtir');
+      });
+    }
+
+    function toggleFavorite(key) {
+      const idx = favorites.indexOf(key);
+      if (idx === -1) favorites.push(key); else favorites.splice(idx, 1);
+      localStorage.setItem('nexora_favorites', JSON.stringify(favorites));
+      const card = cardElements.get(key);
+      if (card) {
+        const btn = card.querySelector('.fav-btn .material-icons');
+        if (btn) btn.innerText = favorites.includes(key) ? 'star' : 'star_border';
+      }
+    }
+
+    function openServerModal(s) {
+      const modal = document.getElementById('serverModal');
+      const content = document.getElementById('serverModalContent');
+      const [ip, port] = (s.link || '').split(':');
+      const imgHtml = s.img ? `<img src="${s.img}" class="modal-image" onerror="this.style.display='none'">` : '';
+      const createdAt = s.createdAt ? new Date(s.createdAt).toLocaleString() : 'Desconhecida';
+      content.innerHTML = `
+        ${imgHtml}
+        <h3 style="color: var(--color-primary); margin-bottom:16px;">${s.name || 'Sem nome'}</h3>
+        <p>${s.desc || 'Sem descrição'}</p>
+        <p><strong>IP:</strong> ${ip || s.link}</p>
+        <p><strong>Porta:</strong> ${port || '25565'}</p>
+        <p><strong>Versão:</strong> ${s.version || '1.20.4'}</p>
+        <p><strong>Jogadores:</strong> ${s.playersNow || 0}/${s.playersMax || '?'}</p>
+        <p><strong>Publicado em:</strong> ${createdAt}</p>
+        <div style="display:flex; gap:12px; margin:16px 0;">
+          <button class="btn btn-primary" id="modalConnectBtn">Entrar no servidor</button>
+          ${s.discord ? `<button class="btn btn-secondary" id="modalDiscordBtn">Discord</button>` : ''}
+          ${s.tiktok ? `<button class="btn btn-secondary" id="modalTikTokBtn">TikTok</button>` : ''}
+        </div>
+        <button class="btn btn-secondary" id="modalCloseBtn" style="margin-top:16px;">Fechar</button>
+      `;
+      modal.classList.add('active');
+
+      document.getElementById('modalCloseBtn').addEventListener('click', () => modal.classList.remove('active'));
+      document.getElementById('modalConnectBtn').addEventListener('click', () => {
+        const serverName = encodeURIComponent(s.name || 'Servidor');
+        const serverAddress = s.link || (ip + ':' + port);
+        window.location.href = `minecraft://?addExternalServer=${serverName}|${serverAddress}`;
+      });
+      if (s.discord) {
+        document.getElementById('modalDiscordBtn').addEventListener('click', () => window.open(s.discord, '_blank'));
+      }
+      if (s.tiktok) {
+        document.getElementById('modalTikTokBtn').addEventListener('click', () => window.open(s.tiktok, '_blank'));
+      }
+    }
+
+    function openReportModal(serverKey) {
+      const server = serverData[serverKey];
+      if (!server) return;
+      currentReportServer = server;
+      document.getElementById('reportServerName').innerText = server.name;
+      document.getElementById('reportReason').value = 'Conteúdo impróprio';
+      document.getElementById('reportDetails').value = '';
+      document.getElementById('reportModal').classList.add('active');
+    }
+
+    document.getElementById('submitReportBtn').addEventListener('click', () => {
+      if (!currentReportServer || !USER_ID) return;
+      const reason = document.getElementById('reportReason').value;
+      const details = document.getElementById('reportDetails').value.trim();
+      const report = {
+        serverId: currentReportServer.key,
+        serverName: currentReportServer.name,
+        reason,
+        details,
+        reportedBy: USER_ID,
+        reportedAt: Date.now(),
+        status: 'pendente'
+      };
+      db.ref('reports').push(report).then(() => {
+        showToast('Denúncia enviada');
+        document.getElementById('reportModal').classList.remove('active');
+        loadMyReports();
+      }).catch(err => showToast(getFriendlyErrorMessage(err)));
+    });
+
+    document.getElementById('cancelReportBtn').addEventListener('click', () => {
+      document.getElementById('reportModal').classList.remove('active');
+    });
+
+    function loadMyReports() {
+      if (!USER_ID || !myReportsList) return;
+      db.ref('reports').orderByChild('reportedBy').equalTo(USER_ID).on('value', (snap) => {
+        const reports = snap.val();
+        myReportsList.innerHTML = '';
+        if (!reports) {
+          myReportsList.innerHTML = '<p>Nenhuma denúncia encontrada.</p>';
+          return;
+        }
+        Object.entries(reports).forEach(([key, rep]) => {
+          const div = document.createElement('div');
+          div.className = 'settings-row';
+          div.innerHTML = `
+            <div>
+              <strong>${rep.serverName}</strong><br>
+              <small>${rep.reason}</small>
+            </div>
+            <span class="badge">${rep.status}</span>
+          `;
+          myReportsList.appendChild(div);
+        });
+      });
+    }
+
+    function loadMyServers() {
+      if (!USER_ID || !myServersList) return;
+      const myServers = serverKeys.filter(k => serverData[k].owner === USER_ID).map(k => serverData[k]);
+      myServersList.innerHTML = '';
+      if (myServers.length === 0) {
+        myServersList.innerHTML = '<p>Você ainda não publicou nenhum servidor.</p>';
+        return;
+      }
+      myServers.forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'my-server-item';
+        div.innerHTML = `
+          <div class="my-server-info">
+            <div class="my-server-name">${s.name}</div>
+            <div class="my-server-ip">${s.link}</div>
+          </div>
+          <div class="my-server-actions">
+            <button class="btn btn-secondary btn-small edit-server" data-key="${s.key}">Editar</button>
+            <button class="btn btn-danger btn-small delete-server" data-key="${s.key}" style="background: var(--color-danger); color:white;">Excluir</button>
+          </div>
+        `;
+        myServersList.appendChild(div);
+      });
+
+      document.querySelectorAll('.edit-server').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const key = btn.dataset.key;
+          openEditModal(key);
+        });
+      });
+      document.querySelectorAll('.delete-server').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const key = btn.dataset.key;
+          if (confirm('Tem certeza que deseja excluir este servidor?')) {
+            db.ref('servers/' + key).remove().then(() => {
+              showToast('Servidor excluído');
+            }).catch(err => showToast('Erro ao excluir'));
+          }
+        });
+      });
+    }
+
+    function openEditModal(key) {
+      const server = serverData[key];
+      if (!server) return;
+      currentEditServerKey = key;
+      const [ip, port] = (server.link || ':').split(':');
+      document.getElementById('editName').value = server.name || '';
+      document.getElementById('editDesc').value = server.desc || '';
+      document.getElementById('editIp').value = ip || '';
+      document.getElementById('editPort').value = port || '25565';
+      document.getElementById('editImg').value = server.img || '';
+      document.getElementById('editCat').value = server.cat || 'survival';
+      document.querySelectorAll('input[name="editType"]').forEach(r => {
+        if (r.value === (server.type || 'java')) r.checked = true;
+      });
+      document.getElementById('editVersion').value = server.version || '';
+      document.getElementById('editDiscord').value = server.discord || '';
+      document.getElementById('editTikTok').value = server.tiktok || '';
+      editServerModal.classList.add('active');
+    }
+
+    document.getElementById('cancelEditBtn').addEventListener('click', () => {
+      editServerModal.classList.remove('active');
+    });
+
+    document.getElementById('saveEditBtn').addEventListener('click', () => {
+      if (!currentEditServerKey) return;
+      const name = document.getElementById('editName').value.trim();
+      const desc = document.getElementById('editDesc').value.trim();
+      const ip = document.getElementById('editIp').value.trim();
+      const port = document.getElementById('editPort').value.trim();
+      const link = ip + ':' + port;
+      const type = document.querySelector('input[name="editType"]:checked')?.value || 'java';
+      
+      if (containsBannedWords(name) || containsBannedWords(desc)) {
+        showToast('Nome ou descrição contêm palavras proibidas.');
+        return;
+      }
+
+      const updates = {
+        name: name,
+        desc: desc,
+        link: link,
+        img: document.getElementById('editImg').value.trim() || null,
+        cat: document.getElementById('editCat').value,
+        type: type,
+        version: document.getElementById('editVersion').value.trim() || null,
+        discord: document.getElementById('editDiscord').value.trim() || null,
+        tiktok: document.getElementById('editTikTok').value.trim() || null
+      };
+      db.ref('servers/' + currentEditServerKey).update(updates).then(() => {
+        showToast('Servidor atualizado');
+        editServerModal.classList.remove('active');
+      }).catch(err => showToast(getFriendlyErrorMessage(err)));
+    });
+
+    function loadActivityFeed() {
+      db.ref('recent_activity').limitToLast(10).on('child_added', (snap) => {
+        const act = snap.val();
+        if (!act) return;
+        const div = document.createElement('div');
+        div.className = 'activity-item';
+        div.innerHTML = `<span class="material-icons">favorite</span> <span><b>${act.user}</b> curtiu <b>${act.server}</b></span> <span class="activity-time">${new Date(act.timestamp).toLocaleTimeString()}</span>`;
+        activityList.prepend(div);
+        if (activityList.children.length > 10) activityList.lastChild.remove();
+      });
+    }
+
+    let logs = [
+      { timestamp: new Date().toLocaleString(), level: 'INFO', message: 'Sistema iniciado' },
+      { timestamp: new Date().toLocaleString(), level: 'INFO', message: 'Usuário autenticado' },
+    ];
+
+    function renderLogs() {
+      logsTableBody.innerHTML = '';
+      logs.forEach(log => {
+        const row = document.createElement('tr');
+        let levelClass = '';
+        if (log.level === 'INFO') levelClass = 'log-info';
+        else if (log.level === 'ERROR') levelClass = 'log-error';
+        else if (log.level === 'WARN') levelClass = 'log-warn';
+        row.innerHTML = `<td>${log.timestamp}</td><td class="${levelClass}">${log.level}</td><td>${log.message}</td>`;
+        logsTableBody.appendChild(row);
+      });
+    }
+
+    function addLog(level, message) {
+      logs.push({ timestamp: new Date().toLocaleString(), level, message });
+      if (logs.length > 100) logs.shift();
+      renderLogs();
+    }
+
+    document.getElementById('clearLogsTableBtn')?.addEventListener('click', () => { logs = []; renderLogs(); showToast('Logs limpos'); });
+
+    function startPingUpdates() {
+      setInterval(() => {
+        if (!showPing) return;
+        serverKeys.forEach(key => {
+          if (serverData[key]) {
+            serverData[key].ping = Math.floor(Math.random() * 290) + 10;
+          }
+        });
+        document.querySelectorAll('.server-card').forEach(card => {
+          const key = card.__key;
+          const server = serverData[key];
+          if (server) {
+            const pingSpan = card.querySelector('.ping-bar-container span');
+            const pingFill = card.querySelector('.ping-fill');
+            if (pingSpan && pingFill) {
+              pingSpan.innerText = server.ping + 'ms';
+              const style = getPingStyle(server.ping);
+              pingFill.style.width = style.width;
+              pingFill.className = 'ping-fill ' + style.colorClass;
+            }
+          }
+        });
+      }, 4000);
+    }
+
+    // ========== ESTATÍSTICAS ==========
+    function updateStats() {
+      totalServersStat.innerText = serverKeys.length;
+      const totalLikes = serverKeys.reduce((acc, key) => acc + (serverData[key].likes || 0), 0);
+      totalLikesStat.innerText = totalLikes;
+
+      db.ref('users').once('value', (snap) => {
+        totalUsersStat.innerText = snap.numChildren();
+      });
+      db.ref('reports').once('value', (snap) => {
+        totalReportsStat.innerText = snap.numChildren();
+      });
+
+      if (categoryChartCanvas && !categoryChart) {
+        const ctx = categoryChartCanvas.getContext('2d');
+        const catCount = {};
+        serverKeys.forEach(key => {
+          const cat = serverData[key].cat || 'outro';
+          catCount[cat] = (catCount[cat] || 0) + 1;
+        });
+        categoryChart = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: Object.keys(catCount),
+            datasets: [{
+              data: Object.values(catCount),
+              backgroundColor: ['#5b7a8a', '#2ecc71', '#f39c12', '#e74c3c']
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { position: 'bottom' }
+            }
+          }
+        });
+      } else if (categoryChart) {
+        const catCount = {};
+        serverKeys.forEach(key => {
+          const cat = serverData[key].cat || 'outro';
+          catCount[cat] = (catCount[cat] || 0) + 1;
+        });
+        categoryChart.data.labels = Object.keys(catCount);
+        categoryChart.data.datasets[0].data = Object.values(catCount);
+        categoryChart.update();
+      }
+    }
+
+    // ========== FAB ==========
+    let lastScrollTop = 0;
+    window.addEventListener('scroll', () => {
+      const scrollTop = window.pageYOffset;
+      if (scrollTop > lastScrollTop && scrollTop > 100) fab.classList.add('hide');
+      else fab.classList.remove('hide');
+      lastScrollTop = scrollTop;
+    });
+
+    fab.addEventListener('click', (e) => {
+      e.stopPropagation();
+      playClick();
+      fabMenu.classList.toggle('active');
+      overlay.classList.toggle('active');
+      fab.classList.toggle('active');
+    });
+
+    overlay.addEventListener('click', () => {
+      fabMenu.classList.remove('active');
+      overlay.classList.remove('active');
+      fab.classList.remove('active');
+    });
+
+    navToggle.addEventListener('click', () => {
+      playClick();
+      fab.click();
+    });
+
+    document.querySelectorAll('.fab-menu-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const opt = item.dataset.option;
+        if (opt === 'inicio') navigateWithHistory('serversScreen');
+        else if (opt === 'perfil') { loadMyReports(); loadMyServers(); navigateWithHistory('profileScreen'); }
+        else if (opt === 'favoritos') { renderFavorites(); navigateWithHistory('favoritesScreen'); }
+        else if (opt === 'postar') navigateWithHistory('postScreen');
+        else if (opt === 'logs') { renderLogs(); navigateWithHistory('logsScreen'); }
+        else if (opt === 'stats') { updateStats(); navigateWithHistory('statsScreen'); }
+        else if (opt === 'admin') { navigateWithHistory('adminScreen'); }
+        fabMenu.classList.remove('active');
+        overlay.classList.remove('active');
+        fab.classList.remove('active');
+      });
+    });
+
+    function renderFavorites() {
+      const favList = document.getElementById('favoritesList');
+      const favServers = serverKeys.filter(k => favorites.includes(k)).map(k => serverData[k]);
+      favList.innerHTML = '';
+      if (favServers.length === 0) { favList.innerHTML = '<div class="settings-section">Nenhum favorito</div>'; return; }
+      favServers.forEach(s => {
+        const card = document.createElement('div');
+        card.className = 'server-card';
+        card.innerHTML = `<div class="server-avatar">⭐</div><div class="server-info"><div class="server-name">${s.name}</div></div>`;
+        card.addEventListener('click', () => openServerModal(s));
+        favList.appendChild(card);
+      });
+    }
+
+    // ========== AUTENTICAÇÃO ==========
+    document.getElementById('goToCadastro').addEventListener('click', (e) => { e.preventDefault(); navigateWithHistory('cadastroScreen'); });
+    document.getElementById('goToLogin').addEventListener('click', (e) => { e.preventDefault(); navigateWithHistory('loginScreen'); });
+
+    document.getElementById('loginBtn').addEventListener('click', () => {
+      const email = document.getElementById('loginEmail').value;
+      const senha = document.getElementById('loginSenha').value;
+      auth.signInWithEmailAndPassword(email, senha)
+        .then(() => addLog('INFO', 'Login realizado'))
+        .catch(err => document.getElementById('loginError').innerText = getFriendlyErrorMessage(err));
+    });
+
+    document.getElementById('cadastroBtn').addEventListener('click', () => {
+      const nome = document.getElementById('cadastroNome').value.trim();
+      const email = document.getElementById('cadastroEmail').value;
+      const senha = document.getElementById('cadastroSenha').value;
+      const confirmar = document.getElementById('cadastroConfirmar').value;
+
+      if (!nome || !email || !senha || !confirmar) {
+        document.getElementById('cadastroError').innerText = 'Preencha todos os campos';
+        return;
+      }
+      if (senha !== confirmar) {
+        document.getElementById('cadastroError').innerText = 'As senhas não coincidem';
+        return;
+      }
+      if (containsBannedWords(nome)) {
+        document.getElementById('cadastroError').innerText = 'Nome contém palavras proibidas.';
+        return;
+      }
+      auth.createUserWithEmailAndPassword(email, senha)
+        .then((cred) => {
+          return cred.user.updateProfile({ displayName: nome });
+        })
+        .then(() => {
+          // Salvar data de criação no banco
+          return db.ref('users/' + auth.currentUser.uid).set({
+            username: nome,
+            email: email,
+            createdAt: Date.now(),
+            lastSeen: Date.now()
+          });
+        })
+        .catch(err => document.getElementById('cadastroError').innerText = getFriendlyErrorMessage(err));
+    });
+
+    document.getElementById('guestLoginBtn').addEventListener('click', () => {
+      auth.signInAnonymously()
+        .then(() => addLog('INFO', 'Entrou como convidado'))
+        .catch(err => showToast(getFriendlyErrorMessage(err)));
+    });
+
+    // LOGIN COM GITHUB USANDO REDIRECT
+    document.getElementById('githubLoginBtn').addEventListener('click', () => {
+      const provider = new firebase.auth.GithubAuthProvider();
+      auth.signInWithRedirect(provider);
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      auth.signOut();
+      navigateWithHistory('loginScreen');
+    });
+
+    // ========== LIDAR COM O RESULTADO DO REDIRECT ==========
+    auth.getRedirectResult().then((result) => {
+      if (result.user) {
+        addLog('INFO', 'Login com GitHub realizado');
+        const user = result.user;
+        db.ref('users/' + user.uid).once('value', (snap) => {
+          if (!snap.exists()) {
+            db.ref('users/' + user.uid).set({
+              username: user.displayName || user.email?.split('@')[0] || 'Usuário',
+              email: user.email || '',
+              createdAt: Date.now(),
+              lastSeen: Date.now()
+            });
+          } else {
+            db.ref('users/' + user.uid + '/lastSeen').set(Date.now());
+          }
+        });
+      }
+    }).catch((error) => {
+      showToast(getFriendlyErrorMessage(error));
+    });
+
+    // Gerenciar UUID mesmo para convidados
+    function getOrCreateUserId() {
+      let uid = localStorage.getItem('user_uid');
+      if (!uid) {
+        uid = generateLocalUUID();
+        localStorage.setItem('user_uid', uid);
+      }
+      return uid;
+    }
+
+    auth.onAuthStateChanged(async user => {
+      if (user) {
+        USER_ID = user.uid;
+        username = user.displayName || user.email?.split('@')[0] || 'Convidado';
+        userEmail = user.email || '';
+        isGuest = user.isAnonymous;
+        // Atualizar lastSeen
+        if (!isGuest) {
+          db.ref('users/' + USER_ID + '/lastSeen').set(Date.now());
+        }
+        // Redefinir histórico para a tela principal
+        historyStack = ['serversScreen'];
+        currentScreen = 'serversScreen';
+      } else {
+        // Usuário não logado: gerar UUID local
+        USER_ID = getOrCreateUserId();
+        username = 'Visitante';
+        userEmail = '';
+        isGuest = true;
+        historyStack = ['loginScreen'];
+        currentScreen = 'loginScreen';
+      }
+
+      profileDisplayName.innerText = username;
+      userUUID.innerText = truncateString(USER_ID, 16);
+      userUUID2.innerText = truncateString(USER_ID, 16);
+      userEmailDisplay.innerText = truncateString(userEmail, 24);
+      userProvider.innerText = isGuest ? 'local' : (user?.providerData[0]?.providerId || 'desconhecido');
+      settingsUsername.value = username;
+
+      // Carregar avatar personalizado ou fallback
+      loadAvatar();
+      // Carregar data de criação da conta
+      await loadAccountCreationDate();
+
+      if (isAdmin()) {
+        adminMenuItem.style.display = 'flex';
+      } else {
+        adminMenuItem.style.display = 'none';
+      }
+
+      if (user) {
+        loadServers();
+        loadActivityFeed();
+        renderLogs();
+        loadMyReports();
+        loadConfig();
+        addLog('INFO', `Usuário ${username} autenticado`);
+        navigateWithHistory('serversScreen');
+      } else {
+        navigateWithHistory('loginScreen');
+      }
+      hideLoader();
+    });
+
+    // ========== CONFIGURAÇÕES ==========
+    document.getElementById('pingToggle').checked = showPing;
+    document.getElementById('pingToggle').addEventListener('change', (e) => {
+      showPing = e.target.checked;
+      localStorage.setItem('showPing', showPing);
+      renderServers();
+      if (showPing) startPingUpdates();
+    });
+
+    document.getElementById('soundToggle').checked = soundEnabled;
+    document.getElementById('soundToggle').addEventListener('change', (e) => {
+      soundEnabled = e.target.checked;
+      localStorage.setItem('soundEnabled', soundEnabled);
+    });
+
+    document.getElementById('turboModeToggle').checked = turboMode;
+    document.getElementById('turboModeToggle').addEventListener('change', (e) => {
+      turboMode = e.target.checked;
+      localStorage.setItem('turboMode', turboMode);
+    });
+
+    document.getElementById('fontSizeSelector').value = fontSize;
+    document.getElementById('fontSizeSelector').addEventListener('change', (e) => {
+      fontSize = e.target.value;
+      localStorage.setItem('fontSize', fontSize);
+      document.body.style.fontSize = fontSize === 'small' ? '14px' : fontSize === 'large' ? '18px' : '16px';
+    });
+
+    document.getElementById('saveUsernameBtn').addEventListener('click', () => {
+      const newName = settingsUsername.value.trim();
+      if (containsBannedWords(newName)) {
+        showToast('Nome contém palavras proibidas.');
+        return;
+      }
+      if (newName && auth.currentUser) {
+        auth.currentUser.updateProfile({ displayName: newName }).then(() => {
+          username = newName;
+          profileDisplayName.innerText = newName;
+          localStorage.setItem('username', newName);
+          showToast('Nome atualizado');
+        }).catch(err => showToast(getFriendlyErrorMessage(err)));
+      } else {
+        // Convidado: salvar no localStorage
+        username = newName;
+        profileDisplayName.innerText = newName;
+        localStorage.setItem('username', newName);
+        showToast('Nome atualizado (local)');
+      }
+    });
+
+    document.getElementById('copyUuidBtn')?.addEventListener('click', () => {
+      navigator.clipboard.writeText(USER_ID);
+      showToast('UUID copiado');
+    });
+    document.getElementById('copyUuidBtn2')?.addEventListener('click', () => {
+      navigator.clipboard.writeText(USER_ID);
+      showToast('UUID copiado');
+    });
+
+    // ========== POSTAR SERVIDOR ==========
+    document.getElementById('postSubmitBtn').addEventListener('click', async () => {
+      const name = document.getElementById('postName').value.trim();
+      const desc = document.getElementById('postDesc').value.trim();
+      const ip = document.getElementById('postIp').value.trim();
+      const port = document.getElementById('postPort').value.trim();
+      const maxPlayers = document.getElementById('postMaxPlayers').value.trim();
+      const img = document.getElementById('postImg').value.trim();
+      const cat = document.getElementById('postCat').value;
+      const type = document.querySelector('input[name="serverType"]:checked').value;
+      const version = document.getElementById('postVersion').value.trim();
+      const discord = document.getElementById('postDiscord').value.trim();
+      const tiktok = document.getElementById('postTikTok').value.trim();
+
+      if (!name || !desc || !ip || !port) {
+        showToast('Preencha nome, descrição, IP e porta');
+        return;
+      }
+
+      if (containsBannedWords(name) || containsBannedWords(desc)) {
+        showToast('Nome ou descrição contêm palavras proibidas.');
+        return;
+      }
+
+      const snapshot = await db.ref('servers').orderByChild('owner').equalTo(USER_ID).once('value');
+      if (snapshot.exists()) {
+        showToast('Você já possui um servidor publicado. Só é permitido um por usuário.');
+        return;
+      }
+
+      const link = ip + ':' + port;
+      const newServer = {
+        name,
+        desc,
+        link,
+        maxPlayers: maxPlayers ? parseInt(maxPlayers) : null,
+        img: img || null,
+        cat,
+        type,
+        version: version || '1.20.4',
+        discord: discord || null,
+        tiktok: tiktok || null,
+        likes: 0,
+        likes_by: {},
+        status: 'online',
+        owner: USER_ID,
+        createdAt: Date.now()
+      };
+
+      db.ref('servers').push(newServer).then(() => {
+        showToast('Servidor publicado!');
+        navigateWithHistory('serversScreen');
+        document.getElementById('postName').value = '';
+        document.getElementById('postDesc').value = '';
+        document.getElementById('postIp').value = '';
+        document.getElementById('postPort').value = '25565';
+        document.getElementById('postMaxPlayers').value = '';
+        document.getElementById('postImg').value = '';
+        document.getElementById('postDiscord').value = '';
+        document.getElementById('postTikTok').value = '';
+      }).catch(err => showToast(getFriendlyErrorMessage(err)));
+    });
+
+    // ========== PESQUISA E FILTROS ==========
+    searchInput.addEventListener('input', e => { searchTerm = e.target.value.toLowerCase(); renderServers(); });
+    filterOptions.forEach(opt => opt.addEventListener('click', () => {
+      filterOptions.forEach(o => o.classList.remove('active'));
+      opt.classList.add('active');
+      currentCategory = opt.dataset.cat;
+      filterPanel.classList.remove('active');
+      renderServers();
+    }));
+    filterBtn.addEventListener('click', () => filterPanel.classList.add('active'));
+
+    // Fechar modal ao clicar no fundo
+    document.querySelectorAll('.modal').forEach(modal => {
+      modal.addEventListener('click', function(e) {
+        if (e.target === this) {
+          this.classList.remove('active');
+        }
+      });
+    });
+
+    // ========== PULL-TO-REFRESH ==========
+    let touchStartY = 0;
+    document.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; });
+    document.addEventListener('touchmove', e => {
+      if (window.scrollY === 0 && e.touches[0].clientY > touchStartY + 50) {
+        ptrDiv.style.display = 'block';
+      }
+    });
+    document.addEventListener('touchend', e => {
+      if (ptrDiv.style.display === 'block') {
+        ptrDiv.innerText = 'Atualizando...';
+        setTimeout(() => {
+          loadServers();
+          ptrDiv.style.display = 'none';
+          ptrDiv.innerText = '↓ Arraste para atualizar';
+        }, 800);
+      }
+    });
+
+    // ========== CLICK NOS BOTÕES DOS CARDS ==========
+    document.addEventListener('click', (e) => {
+      const favBtn = e.target.closest('.fav-btn');
+      const likeBtn = e.target.closest('.like-btn');
+      const reportBtn = e.target.closest('.report-btn');
+      if (favBtn) { e.stopPropagation(); toggleFavorite(favBtn.dataset.key); playClick(); }
+      if (likeBtn) { e.stopPropagation(); toggleLike(likeBtn.dataset.key); playClick(); }
+      if (reportBtn) { e.stopPropagation(); openReportModal(reportBtn.dataset.key); playClick(); }
+    });
+
+    // Inicialmente loginScreen ativa, mas se já estiver logado, onAuthStateChanged muda
+    header.style.display = 'none';
+    fab.classList.add('hidden');
+    // Forçar tela de login se não houver usuário
+    if (!auth.currentUser) {
+      showScreen('loginScreen');
+    } else {
+      showScreen('serversScreen');
+    }
+  </script>
+</body>
+</html>
